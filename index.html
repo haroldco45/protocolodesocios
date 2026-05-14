@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocolo de Socios - Restaurante</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .signature-pad { border: 2px dashed #ccc; border-radius: 8px; cursor: crosshair; }
+        @media print { .no-print { display: none; } }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white p-6 shadow-lg text-center">
+        <h1 class="text-2xl font-bold uppercase tracking-wider">Protocolo Profesional para Socios</h1>
+        <p class="text-sm opacity-80">Gestión de Conflictos y Operación de Restaurantes</p>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-4 mb-20">
+        
+        <!-- Sección 1: El Protocolo (Resumen Lectura) -->
+        <section class="bg-white p-6 rounded-xl shadow-md mb-8">
+            <h2 class="text-xl font-bold border-b-2 border-yellow-500 mb-4 pb-2 text-slate-700">1. Principios y Reglas de Oro</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm italic">
+                <p>• El restaurante es empresa, no extensión personal.</p>
+                <p>• Prioridad: Rentabilidad, Cliente y Continuidad.</p>
+                <p>• Ningún socio da órdenes directas sin rol operativo.</p>
+                <p>• Todo consumo debe ser registrado en el sistema.</p>
+            </div>
+        </section>
+
+        <!-- Sección 2: Formulario de Acuerdo Rápido -->
+        <section class="bg-white p-6 rounded-xl shadow-md mb-8">
+            <h2 class="text-xl font-bold border-b-2 border-yellow-500 mb-4 pb-2 text-slate-700">2. Formalización del Acuerdo</h2>
+            <form id="contractForm" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase">Socio Operador (Día a día)</label>
+                        <input type="text" id="operador" class="w-full border p-2 rounded bg-gray-50" placeholder="Nombre completo">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase">Socio Financiero (Caja/Pagos)</label>
+                        <input type="text" id="financiero" class="w-full border p-2 rounded bg-gray-50" placeholder="Nombre completo">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase">Límite de Gasto Individual</label>
+                        <input type="number" id="limiteGasto" class="w-full border p-2 rounded bg-gray-50" placeholder="Ej: 5000">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase">% Aprobación Decisiones Mayores</label>
+                        <input type="text" id="porcentajeVoto" class="w-full border p-2 rounded bg-gray-50" placeholder="Ej: 75%">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase">Política de Consumo de Socios</label>
+                    <select id="politicaConsumo" class="w-full border p-2 rounded bg-gray-50">
+                        <option value="Descuento 30%">Descuento 30% fijo</option>
+                        <option value="Cortesía Limitada">Cortesía mensual limitada</option>
+                        <option value="Precio Costo">Pago a precio de costo</option>
+                    </select>
+                </div>
+            </form>
+        </section>
+
+        <!-- Sección 3: Firma y Georeferencia -->
+        <section class="bg-white p-6 rounded-xl shadow-md">
+            <h2 class="text-xl font-bold border-b-2 border-yellow-500 mb-4 pb-2 text-slate-700">3. Firma y Ubicación</h2>
+            <p class="text-xs text-gray-500 mb-4">Al firmar, se capturará su ubicación GPS para validez del acuerdo.</p>
+            
+            <canvas id="signaturePad" class="signature-pad w-full h-40 bg-gray-100"></canvas>
+            
+            <div class="mt-4 flex flex-col gap-2">
+                <button onclick="clearSignature()" class="text-sm text-red-600 underline">Limpiar Firma</button>
+                <div id="geoStatus" class="text-xs font-mono bg-yellow-100 p-2 rounded">Esperando ubicación...</div>
+            </div>
+        </section>
+
+        <button onclick="generateAgreement()" class="w-full mt-8 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-full shadow-lg transition-transform active:scale-95 no-print">
+            GENERAR Y ENVIAR ACUERDO
+        </button>
+
+    </main>
+
+    <!-- Footer de Créditos Obligatorios -->
+    <footer class="bg-white border-t border-gray-200 p-4 text-center fixed bottom-0 w-full shadow-inner">
+        <p class="text-sm font-semibold text-slate-600">Hecha por **Vibras Positivas HM**</p>
+        <p class="text-[10px] text-gray-400">© 2026 Todos los derechos reservados</p>
+    </footer>
+
+    <script>
+        // Lógica de Geolocalización
+        let userLocation = "No permitida";
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(position => {
+                userLocation = `Lat: ${position.coords.latitude}, Long: ${position.coords.longitude}`;
+                document.getElementById('geoStatus').innerText = "📍 Ubicación capturada correctamente.";
+                document.getElementById('geoStatus').classList.replace('bg-yellow-100', 'bg-green-100');
+            });
+        }
+
+        // Lógica de Firma
+        const canvas = document.getElementById('signaturePad');
+        const ctx = canvas.getContext('2d');
+        let writing = false;
+
+        canvas.addEventListener('mousedown', () => writing = true);
+        canvas.addEventListener('mouseup', () => { writing = false; ctx.beginPath(); });
+        canvas.addEventListener('mousemove', draw);
+
+        function draw(e) {
+            if (!writing) return;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#000';
+            
+            const rect = canvas.getBoundingClientRect();
+            ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+            ctx.stroke();
+        }
+
+        function clearSignature() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Generación de Mensaje para WhatsApp
+        function generateAgreement() {
+            const op = document.getElementById('operador').value;
+            const fin = document.getElementById('financiero').value;
+            const gasto = document.getElementById('limiteGasto').value;
+            const pol = document.getElementById('politicaConsumo').value;
+
+            const text = `*ACUERDO DE SOCIOS - PROTOCOLO PROFESIONAL*%0A%0A` +
+                         `Socio Operador: ${op}%0A` +
+                         `Socio Financiero: ${fin}%0A` +
+                         `Límite Gasto: $${gasto}%0A` +
+                         `Política Consumo: ${pol}%0A%0A` +
+                         `*Ubicación:* ${userLocation}%0A` +
+                         `*Fecha:* ${new Date().toLocaleString()}%0A%0A` +
+                         `Hecha por Vibras Positivas HM`;
+
+            const whatsappUrl = `https://wa.me/?text=${text}`;
+            window.open(whatsappUrl, '_blank');
+        }
+    </script>
+</body>
+</html>
